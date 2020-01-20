@@ -1,10 +1,11 @@
-BINDIR		:=	$(CURDIR)/bin
-BINNAME		?=	jarvis
+BINDIR:=$(CURDIR)/bin
+BINNAME?=jarvis
 
-GOCMD			=	go
-GOBUILD		=	$(GOCMD) build
-GOCLEAN		=	$(GOCMD) clean
-GOTEST		=	$(GOCMD) test
+GOCMD=go
+GOBUILD=$(GOCMD) build
+GOCLEAN=$(GOCMD) clean
+GOGENERATE=$(GOCMD) generate
+GOTEST=$(GOCMD) test
 
 #------
 #	all
@@ -27,7 +28,14 @@ test:
 	$(GOTEST) -v ./...
 
 #------
-#	test
+# generate codes (ex:gomock)
+.PHONY: generate
+
+generate:
+	$(GOGENERATE) -v ./...
+
+#------
+# clean	
 .PHONY: clean
 
 clean:

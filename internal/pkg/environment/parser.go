@@ -16,6 +16,5 @@ func ParseEnvironmentFile(envFilePath string) (*Environments, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &model, nil
 }

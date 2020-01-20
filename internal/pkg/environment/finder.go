@@ -3,6 +3,7 @@ package environment
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -60,6 +61,36 @@ func FindEnvironmentTreeFromPredicate(predicate *ParsedPredicate, envs *Environm
 	}
 
 	return env, nil
+}
+
+func GetFullPathInventoriesFromEnvironments(basePath string, envs Environments) ([]string, error) {
+	if envs == nil {
+		return nil, fmt.Errorf("environment: environment tree is nil")
+	}
+	var globalInventories []string
+
+	for _, env := range envs {
+		if env.Descriptions == nil {
+			return nil, fmt.Errorf("environment: no environment descriptions")
+		}
+		for _, description := range env.Descriptions {
+			if description.Platforms == nil {
+				return nil, fmt.Errorf("environment: no platforms")
+			}
+
+			for _, platform := range description.Platforms {
+				if platform.Inventories == nil && len(platform.Inventories) == 0 {
+					return nil, fmt.Errorf("environment: no inventories")
+				}
+
+				for _, relativePath := range platform.Inventories {
+					globalInventories = append(globalInventories, filepath.Join(basePath, relativePath))
+				}
+			}
+		}
+
+	}
+	return globalInventories, nil
 }
 
 //ParsePredicate validate that the predicate follow `type.env.platform' syntax
