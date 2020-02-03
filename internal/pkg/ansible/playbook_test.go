@@ -26,7 +26,7 @@ func TestPlaybookExecutorPlay(t *testing.T) {
 		{
 			"successfull run",
 			[]string{"inventory1", "inventory2", "inventory3"},
-			[]string{"--diff", "--check", "--inventory"},
+			[]string{"--diff", "--inventory"},
 			nil,
 		},
 	}
@@ -58,7 +58,7 @@ func TestPlaybookExecutorPlay(t *testing.T) {
 			//it's like > /dev/null
 			pE := InitPlaybookExecutor(
 				m, playbookBinPath, playbookRepoPath,
-				PlaybookArgs{Inventories: tt.inventories}, ioutil.Discard, false)
+				CommonArgs{Inventories: tt.inventories}, ioutil.Discard, false)
 			err := pE.Play(playbookName)
 
 			if tt.err != nil {
@@ -88,7 +88,7 @@ func TestComputePlaybookPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pE := PlaybookExecutor{playbookRepositoryPath: tt.playbookRepoPath}
+			pE := Playbook{PlaybookExecutor: PlaybookExecutor{playbookRepositoryPath: tt.playbookRepoPath}}
 			path, err := pE.computePlaybookPath(tt.playbookName)
 
 			if tt.err != nil {
@@ -108,30 +108,30 @@ func TestComputePlaybookPath(t *testing.T) {
 func TestCombineWithInventory(t *testing.T) {
 	tests := []struct {
 		name               string
-		playbookArgs       PlaybookArgs
+		playbookArgs       Playbook
 		checkerAgainstArgs func(args []string) bool
 		inventory          string
 	}{
-		{"show diff", PlaybookArgs{HideDiff: false},
+		{"show diff", Playbook{CommonArgs: CommonArgs{HideDiff: false}},
 			mustInArgs("--diff"), ""},
-		{"hide diff", PlaybookArgs{HideDiff: true},
+		{"hide diff", Playbook{CommonArgs: CommonArgs{HideDiff: true}},
 			mustNotInArgs("--diff"), ""},
-		{"check mode activated", PlaybookArgs{CheckModeDeactivated: false},
+		{"check mode activated", Playbook{CommonArgs: CommonArgs{CheckModeEnabled: true}},
 			mustInArgs("--check"), ""},
-		{"check mode deactivated", PlaybookArgs{CheckModeDeactivated: true},
+		{"check mode deactivated", Playbook{CommonArgs: CommonArgs{CheckModeEnabled: false}},
 			mustNotInArgs("--check"), ""},
-		{"become", PlaybookArgs{BecomeSudo: true},
+		{"become", Playbook{CommonArgs: CommonArgs{BecomeSudo: true}},
 			mustInArgs("-b"), ""},
-		{"not become", PlaybookArgs{BecomeSudo: false},
+		{"not become", Playbook{CommonArgs: CommonArgs{BecomeSudo: false}},
 			mustNotInArgs("-b"), ""},
-		{"inventory toto", PlaybookArgs{},
+		{"inventory toto", Playbook{CommonArgs: CommonArgs{}},
 			mustInArgs("--inventory", "toto"), "toto"},
-		{"other args", PlaybookArgs{OtherArgs: []string{"-t", "ok", "-l", "chazam"}},
+		{"other args", Playbook{CommonArgs: CommonArgs{OtherArgs: []string{"-t", "ok", "-l", "chazam"}}},
 			mustInArgs("-t", "ok", "-l", "chazam"), ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := tt.playbookArgs.combineWithInventory(tt.inventory)
+			args := tt.playbookArgs.ansibleOptions(tt.inventory)
 
 			if !tt.checkerAgainstArgs(args) {
 				t.Error("error while checking args")

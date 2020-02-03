@@ -1,7 +1,10 @@
 environments:
   path: /location/of/where/the/ansible/inventories/lives
   helper: environments.yaml
-ansible_playbook:
-  bin_path: /location/of/ansible
+ansible:
   working_directory: /location/of/where/the/ansible-playbook/must/be/executed
-  playbooks_path: /location/of/playbooks
+  run:
+    bin_path: /location/of/ansible/command
+  playbook:
+    bin_path: /location/of/ansible-playbook/command
+    playbooks_path: /location/of/playbooks

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"jarvis/internal/pkg/ansible"
 	"jarvis/internal/pkg/command"
 	"jarvis/internal/pkg/environment"
@@ -13,18 +14,34 @@ import (
 var (
 	HideDiff             bool
 	CheckModeDeactivated bool
+	CheckModeEnabled     bool
 	BecomeSudo           bool
+)
+
+var (
+	ModuleName  string
+	ModuleArg   string
+	HostPattern string
 )
 
 func init() {
 	rootCmd.AddCommand(ansibleCmd)
 	ansibleCmd.AddCommand(playCmd)
-	playCmd.Flags().BoolVar(&HideDiff, "nodiff", false,
+	ansibleCmd.PersistentFlags().BoolVar(&HideDiff, "nodiff", false,
 		"Hide diff")
+	ansibleCmd.PersistentFlags().BoolVarP(&BecomeSudo, "become", "b", false,
+		"Become sudo")
 	playCmd.Flags().BoolVar(&CheckModeDeactivated, "nocheck", false,
 		"Deactivate check mode")
-	playCmd.Flags().BoolVarP(&BecomeSudo, "become", "b", false,
-		"Become sudo")
+
+	ansibleCmd.AddCommand(runCmd)
+	runCmd.Flags().StringVarP(&ModuleName, "module", "m", "shell", "Ansible module name")
+	runCmd.Flags().StringVarP(&ModuleArg, "args", "a", "", "Ansible module name")
+	runCmd.Flags().StringVarP(&HostPattern, "target", "t", "", "Ansible host-pattern")
+	runCmd.Flags().BoolVar(&CheckModeEnabled, "check", false,
+		"Enable check mode")
+	runCmd.MarkFlagRequired("args")
+	runCmd.MarkFlagRequired("target")
 }
 
 //usage: jarvis ansible
@@ -40,6 +57,49 @@ var ansibleCmd = &cobra.Command{
 	},
 }
 
+var runCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Run Ansible module",
+	Args:  cobra.ArbitraryArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+		cmdWorkingDir := viper.GetString("ansible.working_directory")
+		envsPath := viper.GetString("environments.path")
+
+		inventories, err := environment.GetFullPathInventoriesFromEnvironments(envsPath, *environments)
+		if err != nil {
+			return err
+		}
+		ModuleArgs := ansible.RunModuleArgs{
+			ModuleName:  ModuleName,
+			ModuleArg:   ModuleArg,
+			HostPattern: HostPattern,
+			CommonArgs: ansible.CommonArgs{
+				Inventories:      inventories,
+				HideDiff:         HideDiff,
+				BecomeSudo:       BecomeSudo,
+				CheckModeEnabled: CheckModeEnabled,
+				OtherArgs:        args,
+			},
+		}
+		if isDebug {
+			fmt.Printf("Ansible module args: %v\n", args)
+		}
+		ansibleBinPath := viper.GetString("ansible.run.bin_path")
+
+		runner := command.Init(os.Stdout, os.Stderr, cmdWorkingDir, isDebug)
+		runExecutor := ansible.InitRunModuleExecutor(
+			runner, ansibleBinPath, ModuleArgs, os.Stdout, isDebug)
+
+		err = runExecutor.Run()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	},
+}
+
 //usage: jarvis ansible play
 //returns: output of ansible-playbook command
 var playCmd = &cobra.Command{
@@ -48,7 +108,7 @@ var playCmd = &cobra.Command{
 	//playbook name is mandatory
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cmdWorkingDir := viper.GetString("ansible_playbook.working_directory")
+		cmdWorkingDir := viper.GetString("ansible.working_directory")
 		envsPath := viper.GetString("environments.path")
 
 		inventories, err := environment.GetFullPathInventoriesFromEnvironments(envsPath, *environments)
@@ -56,15 +116,18 @@ var playCmd = &cobra.Command{
 			return err
 		}
 
-		playbookArgs := ansible.PlaybookArgs{
-			Inventories:          inventories,
-			HideDiff:             HideDiff,
-			CheckModeDeactivated: CheckModeDeactivated,
-			BecomeSudo:           BecomeSudo,
-			OtherArgs:            args[1:],
+		if CheckModeDeactivated {
+			CheckModeEnabled = false
 		}
-		playbookBinPath := viper.GetString("ansible_playbook.bin_path")
-		playbooksPath := viper.GetString("ansible_playbook.playbooks_path")
+		playbookArgs := ansible.CommonArgs{
+			Inventories:      inventories,
+			HideDiff:         HideDiff,
+			BecomeSudo:       BecomeSudo,
+			CheckModeEnabled: CheckModeEnabled,
+			OtherArgs:        args[1:],
+		}
+		playbookBinPath := viper.GetString("ansible.playbook.bin_path")
+		playbooksPath := viper.GetString("ansible.playbook.playbooks_path")
 
 		runner := command.Init(os.Stdout, os.Stderr, cmdWorkingDir, isDebug)
 		playbookExecutor := ansible.InitPlaybookExecutor(

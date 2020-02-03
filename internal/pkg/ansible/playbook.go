@@ -1,4 +1,3 @@
-//go:generate mockgen -source=playbook.go -destination=../mocks/mock_commandexecutor.go -package=mocks CommandExecutor
 package ansible
 
 import (
@@ -13,45 +12,41 @@ type (
 		commandExecutor        CommandExecutor
 		playbookBinPath        string
 		playbookRepositoryPath string
-		args                   PlaybookArgs
 		stdout                 io.Writer
 		debug                  bool
 	}
 
-	PlaybookArgs struct {
-		Inventories                    []string
-		HideDiff, CheckModeDeactivated bool
-		BecomeSudo                     bool
-		OtherArgs                      []string
-	}
-
-	CommandExecutor interface {
-		Run(command string, params ...string) error
+	Playbook struct {
+		PlaybookExecutor
+		CommonArgs
 	}
 )
 
 func InitPlaybookExecutor(cmdExecutor CommandExecutor, playbookBinPath, playbookPath string,
-	args PlaybookArgs, stdout io.Writer, debug bool) *PlaybookExecutor {
-	return &PlaybookExecutor{cmdExecutor, playbookBinPath, playbookPath, args, stdout, debug}
+	args CommonArgs, stdout io.Writer, debug bool) *Playbook {
+	return &Playbook{
+		PlaybookExecutor: PlaybookExecutor{cmdExecutor, playbookBinPath, playbookPath, stdout, debug},
+		CommonArgs:       args,
+	}
 }
 
-func (pE PlaybookExecutor) Play(playbookName string) error {
-	if len(pE.args.Inventories) == 0 {
+func (play Playbook) Play(playbookName string) error {
+	if len(play.Inventories) == 0 {
 		return fmt.Errorf("playbook: no inventory to work on")
 	}
 
-	if pE.debug {
-		pE.printInventories()
+	if play.debug {
+		play.printInventories(play.stdout)
 	}
 
-	playbookPath, err := pE.computePlaybookPath(playbookName)
+	playbookPath, err := play.computePlaybookPath(playbookName)
 	if err != nil {
 		return err
 	}
 
-	for _, inventory := range pE.args.Inventories {
-		fmt.Fprintf(pE.stdout, "Start running %s playbook on %s inventory...\n", playbookName, inventory)
-		err = pE.play(playbookPath, inventory)
+	for _, inventory := range play.Inventories {
+		fmt.Fprintf(play.stdout, "Start running %s playbook on %s inventory...\n", playbookName, inventory)
+		err = play.play(playbookPath, inventory)
 		if err != nil {
 			return err
 		}
@@ -60,13 +55,13 @@ func (pE PlaybookExecutor) Play(playbookName string) error {
 	return nil
 }
 
-func (pE PlaybookExecutor) play(playbookPath string, inventory string) error {
+func (play Playbook) play(playbookPath string, inventory string) error {
 	if len(inventory) == 0 {
 		return fmt.Errorf("playbook: inventory is empty")
 	}
 
-	params := append(pE.args.combineWithInventory(inventory), playbookPath)
-	err := pE.commandExecutor.Run(pE.playbookBinPath, params...)
+	params := append(play.ansibleOptions(inventory), playbookPath)
+	err := play.commandExecutor.Run(play.playbookBinPath, params...)
 	if err != nil {
 		return err
 	}
@@ -74,8 +69,8 @@ func (pE PlaybookExecutor) play(playbookPath string, inventory string) error {
 	return nil
 }
 
-func (pE PlaybookExecutor) computePlaybookPath(name string) (string, error) {
-	playbookPath := filepath.Join(pE.playbookRepositoryPath, name)
+func (play Playbook) computePlaybookPath(name string) (string, error) {
+	playbookPath := filepath.Join(play.playbookRepositoryPath, name)
 	info, err := os.Stat(playbookPath)
 
 	if os.IsNotExist(err) {
@@ -89,27 +84,9 @@ func (pE PlaybookExecutor) computePlaybookPath(name string) (string, error) {
 	return playbookPath, nil
 }
 
-func (pA PlaybookArgs) combineWithInventory(inventory string) []string {
-	var result []string
-	if !pA.HideDiff {
-		result = append(result, "--diff")
-	}
-	if !pA.CheckModeDeactivated {
-		result = append(result, "--check")
-	}
-	if pA.BecomeSudo {
-		result = append(result, "-b")
-	}
-
-	result = append(result, "--inventory", inventory)
-
-	result = append(result, pA.OtherArgs...)
+func (play Playbook) ansibleOptions(inventory string) []string {
+	var result = play.computeCommonArgs(inventory)
+	result = append(result, play.OtherArgs...)
 
 	return result
-}
-
-func (pE PlaybookExecutor) printInventories() {
-	for _, inv := range pE.args.Inventories {
-		fmt.Fprintln(pE.stdout, "inventory:", inv)
-	}
 }
