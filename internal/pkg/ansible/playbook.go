@@ -60,7 +60,7 @@ func (play Playbook) play(playbookPath string, inventory string) error {
 		return fmt.Errorf("playbook: inventory is empty")
 	}
 
-	params := append(play.ansibleOptions(inventory), playbookPath)
+	params := append(play.computeAnsibleOptions(inventory), playbookPath)
 	err := play.commandExecutor.Run(play.playbookBinPath, params...)
 	if err != nil {
 		return err
@@ -84,8 +84,8 @@ func (play Playbook) computePlaybookPath(name string) (string, error) {
 	return playbookPath, nil
 }
 
-func (play Playbook) ansibleOptions(inventory string) []string {
-	var result = play.computeCommonArgs(inventory)
+func (play Playbook) computeAnsibleOptions(inventory string) []string {
+	var result = play.computeCommonArgsWithInventory(inventory)
 	result = append(result, play.OtherArgs...)
 
 	return result

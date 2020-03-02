@@ -105,7 +105,7 @@ func TestComputePlaybookPath(t *testing.T) {
 	}
 }
 
-func TestCombineWithInventory(t *testing.T) {
+func TestComputePlayAnsibleOptions(t *testing.T) {
 	tests := []struct {
 		name               string
 		playbookArgs       Playbook
@@ -131,7 +131,7 @@ func TestCombineWithInventory(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := tt.playbookArgs.ansibleOptions(tt.inventory)
+			args := tt.playbookArgs.computeAnsibleOptions(tt.inventory)
 
 			if !tt.checkerAgainstArgs(args) {
 				t.Error("error while checking args")

@@ -18,7 +18,7 @@ type (
 	}
 )
 
-func (cargs CommonArgs) computeCommonArgs(inventory string) []string {
+func (cargs CommonArgs) computeCommonArgsWithInventory(inventory string) []string {
 	var result []string
 	if cargs.BecomeSudo {
 		result = append(result, "-b")

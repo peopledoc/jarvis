@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	//	"os"
-	//	"path/filepath"
 )
 
 type (
@@ -40,15 +38,23 @@ func InitRunModuleExecutor(cmdExecutor CommandExecutor, binPath string, runModul
 
 func (runMod RunModule) Run() error {
 
+	if len(runMod.Inventories) == 0 {
+		return fmt.Errorf("run: no inventory to work on")
+	}
+
 	if runMod.debug {
 		runMod.printInventories(runMod.stdout)
 	}
 	for _, inventory := range runMod.Inventories {
-		if runMod.debug {
-			fmt.Fprintf(runMod.stdout, "Start running %s module on %s inventory...\n", runMod.ModuleName, inventory)
-			fmt.Fprintf(runMod.stdout, strings.Join(runMod.ansibleOptions(inventory), " "))
+		if len(inventory) == 0 {
+			return fmt.Errorf("run: inventory is empty")
 		}
-		err := runMod.commandExecutor.Run(runMod.binPath, runMod.ansibleOptions(inventory)...)
+		if runMod.debug {
+			fmt.Fprintf(runMod.stdout, "Start running %s module on %s inventory...\n",
+				runMod.ModuleName, inventory)
+			fmt.Fprintf(runMod.stdout, strings.Join(runMod.computeAnsibleOptions(inventory), " "))
+		}
+		err := runMod.commandExecutor.Run(runMod.binPath, runMod.computeAnsibleOptions(inventory)...)
 		if err != nil {
 			return err
 		}
@@ -56,8 +62,8 @@ func (runMod RunModule) Run() error {
 	return nil
 }
 
-func (runMod RunModule) ansibleOptions(inventory string) []string {
-	var result = runMod.computeCommonArgs(inventory)
+func (runMod RunModule) computeAnsibleOptions(inventory string) []string {
+	var result = runMod.computeCommonArgsWithInventory(inventory)
 	result = append(result, "-m", runMod.ModuleName)
 	result = append(result, "--args", runMod.ModuleArg)
 	result = append(result, runMod.HostPattern)
