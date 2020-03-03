@@ -112,6 +112,21 @@ func TestComputeRunAnsibleOptions(t *testing.T) {
 			[]string{"--inventory", "inv2", "-m", "barMod", "--args", "barArg", "barHost", "extra1", "extra2"},
 			"inv2",
 		},
+		{
+			"noarg",
+			RunModule{
+				RunModuleArgs: RunModuleArgs{
+
+					CommonArgs: CommonArgs{
+						BecomeSudo: true,
+						OtherArgs:  []string{"extra1", "extra2"},
+					},
+					ModuleName:  "ping",
+					HostPattern: "barHost",
+				}},
+			[]string{"-b", "--diff", "--inventory", "inv3", "-m", "ping", "barHost", "extra1", "extra2"},
+			"inv3",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

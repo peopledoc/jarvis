@@ -40,7 +40,6 @@ func init() {
 	runCmd.Flags().StringVarP(&HostPattern, "target", "t", "", "Ansible host-pattern")
 	runCmd.Flags().BoolVar(&CheckModeEnabled, "check", false,
 		"Enable check mode")
-	runCmd.MarkFlagRequired("args")
 	runCmd.MarkFlagRequired("target")
 }
 

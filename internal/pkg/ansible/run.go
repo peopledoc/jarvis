@@ -65,7 +65,9 @@ func (runMod RunModule) Run() error {
 func (runMod RunModule) computeAnsibleOptions(inventory string) []string {
 	var result = runMod.computeCommonArgsWithInventory(inventory)
 	result = append(result, "-m", runMod.ModuleName)
-	result = append(result, "--args", runMod.ModuleArg)
+	if len(runMod.ModuleArg) > 0 {
+		result = append(result, "--args", runMod.ModuleArg)
+	}
 	result = append(result, runMod.HostPattern)
 	result = append(result, runMod.OtherArgs...)
 
