@@ -115,14 +115,11 @@ var playCmd = &cobra.Command{
 			return err
 		}
 
-		if CheckModeDeactivated {
-			CheckModeEnabled = false
-		}
 		playbookArgs := ansible.CommonArgs{
 			Inventories:      inventories,
 			HideDiff:         HideDiff,
 			BecomeSudo:       BecomeSudo,
-			CheckModeEnabled: CheckModeEnabled,
+			CheckModeEnabled: !CheckModeDeactivated,
 			OtherArgs:        args[1:],
 		}
 		playbookBinPath := viper.GetString("ansible.playbook.bin_path")
