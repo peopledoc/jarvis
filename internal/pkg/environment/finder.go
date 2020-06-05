@@ -9,12 +9,14 @@ import (
 )
 
 var (
-	predicateValidator *regexp.Regexp
+	predicateValidator                *regexp.Regexp
+	predicateValidatorJoinInventories *regexp.Regexp
 )
 
 func init() {
 	//compile only once the regex
 	predicateValidator = regexp.MustCompile(`(^[a-z-A-Z]+)(\.[a-z-A-Z]+)?(\.[a-z-A-Z]+)?$`)
+	predicateValidatorJoinInventories = regexp.MustCompile(`(^[a-z-A-Z]+)(\.[a-z-A-Z]+)(\.[a-z-A-Z]+)?$`)
 }
 
 //FindEnvironmentTreeFromPredicate return an environment tree corresponding to
@@ -120,6 +122,10 @@ func ParsePredicate(predicate string) (*ParsedPredicate, error) {
 	}
 
 	return result, nil
+}
+
+func IsPredicateJoinInventoriesSyntaxValid(predicate string) bool {
+	return predicateValidatorJoinInventories.MatchString(predicate)
 }
 
 func findPlatform(name string, platforms []Platform) *Platform {

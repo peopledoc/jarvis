@@ -14,11 +14,12 @@ type (
 		Inventories          []string
 		HideDiff, BecomeSudo bool
 		CheckModeEnabled     bool
+		JoinInventories      bool
 		OtherArgs            []string
 	}
 )
 
-func (cargs CommonArgs) computeCommonArgsWithInventory(inventory string) []string {
+func (cargs CommonArgs) buildCommonArgs() []string {
 	var result []string
 	if cargs.BecomeSudo {
 		result = append(result, "-b")
@@ -29,8 +30,21 @@ func (cargs CommonArgs) computeCommonArgsWithInventory(inventory string) []strin
 	if cargs.CheckModeEnabled {
 		result = append(result, "--check")
 	}
-	result = append(result, "--inventory", inventory)
 
+	result = append(result, cargs.OtherArgs...)
+
+	return result
+}
+
+func buildInventoryArg(inventory string) []string {
+	return []string{"--inventory", inventory}
+}
+
+func (cargs CommonArgs) joinInventories() []string {
+	var result []string
+	for _, inv := range cargs.Inventories {
+		result = append(result, buildInventoryArg(inv)...)
+	}
 	return result
 }
 

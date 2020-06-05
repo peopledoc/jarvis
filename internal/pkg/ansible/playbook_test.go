@@ -16,17 +16,25 @@ func TestPlaybookExecutorPlay(t *testing.T) {
 	const playbookName = "playbook.yml"
 	fullPlaybookPath := filepath.Join(playbookRepoPath, playbookName)
 	tests := []struct {
-		name        string
-		inventories []string
-		args        []string
-		err         error
+		name              string
+		inventories       []string
+		joinedInventories bool
+		args              []string
+		err               error
 	}{
-		{"empty inventories", []string{}, []string{}, errors.New("playbook: no inventory to work on")},
-		{"empty inventory", []string{""}, []string{}, errors.New("playbook: inventory is empty")},
+		{"empty inventories", []string{}, false, []string{}, errors.New("playbook: no inventory to work on")},
 		{
 			"successfull run",
 			[]string{"inventory1", "inventory2", "inventory3"},
+			false,
 			[]string{"--diff", "--inventory"},
+			nil,
+		},
+		{
+			"successfull join run",
+			[]string{"inventory1", "inventory2", "inventory3"},
+			true,
+			[]string{"--diff", "--inventory", "inventory1", "--inventory", "inventory2", "--inventory", "inventory3"},
 			nil,
 		},
 	}
@@ -44,21 +52,27 @@ func TestPlaybookExecutorPlay(t *testing.T) {
 					Run(playbookBinPath, tt.args).
 					Times(0)
 			} else {
-				//We iterate over inventories to construct except
-				//calls
-				for _, inventory := range tt.inventories {
-					completeArgs := append(tt.args, inventory, fullPlaybookPath)
+				if tt.joinedInventories {
+					completeArgs := append(tt.args, fullPlaybookPath)
 					m.EXPECT().
 						Run(playbookBinPath, completeArgs).
 						Return(nil).
 						Times(1)
+				} else {
+					for _, inventory := range tt.inventories {
+						completeArgs := append(tt.args, inventory, fullPlaybookPath)
+						m.EXPECT().
+							Run(playbookBinPath, completeArgs).
+							Return(nil).
+							Times(1)
+					}
 				}
 			}
 			//ioutil.Discard because we don't care of the debug output
 			//it's like > /dev/null
 			pE := InitPlaybookExecutor(
 				m, playbookBinPath, playbookRepoPath,
-				CommonArgs{Inventories: tt.inventories}, ioutil.Discard, false)
+				CommonArgs{Inventories: tt.inventories, JoinInventories: tt.joinedInventories}, ioutil.Discard, false)
 			err := pE.Play(playbookName)
 
 			if tt.err != nil {
@@ -110,28 +124,25 @@ func TestComputePlayAnsibleOptions(t *testing.T) {
 		name               string
 		playbookArgs       Playbook
 		checkerAgainstArgs func(args []string) bool
-		inventory          string
 	}{
 		{"show diff", Playbook{CommonArgs: CommonArgs{HideDiff: false}},
-			mustInArgs("--diff"), ""},
+			mustInArgs("--diff")},
 		{"hide diff", Playbook{CommonArgs: CommonArgs{HideDiff: true}},
-			mustNotInArgs("--diff"), ""},
+			mustNotInArgs("--diff")},
 		{"check mode activated", Playbook{CommonArgs: CommonArgs{CheckModeEnabled: true}},
-			mustInArgs("--check"), ""},
+			mustInArgs("--check")},
 		{"check mode deactivated", Playbook{CommonArgs: CommonArgs{CheckModeEnabled: false}},
-			mustNotInArgs("--check"), ""},
+			mustNotInArgs("--check")},
 		{"become", Playbook{CommonArgs: CommonArgs{BecomeSudo: true}},
-			mustInArgs("-b"), ""},
+			mustInArgs("-b")},
 		{"not become", Playbook{CommonArgs: CommonArgs{BecomeSudo: false}},
-			mustNotInArgs("-b"), ""},
-		{"inventory toto", Playbook{CommonArgs: CommonArgs{}},
-			mustInArgs("--inventory", "toto"), "toto"},
+			mustNotInArgs("-b")},
 		{"other args", Playbook{CommonArgs: CommonArgs{OtherArgs: []string{"-t", "ok", "-l", "chazam"}}},
-			mustInArgs("-t", "ok", "-l", "chazam"), ""},
+			mustInArgs("-t", "ok", "-l", "chazam")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := tt.playbookArgs.computeAnsibleOptions(tt.inventory)
+			args := tt.playbookArgs.buildCommonArgs()
 
 			if !tt.checkerAgainstArgs(args) {
 				t.Error("error while checking args")

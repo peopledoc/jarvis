@@ -44,29 +44,27 @@ func (play Playbook) Play(playbookName string) error {
 		return err
 	}
 
-	for _, inventory := range play.Inventories {
-		fmt.Fprintf(play.stdout, "Start running %s playbook on %s inventory...\n", playbookName, inventory)
-		err = play.play(playbookPath, inventory)
-		if err != nil {
-			return err
+	params := play.buildCommonArgs()
+
+	if play.JoinInventories {
+		invs := play.joinInventories()
+		params = append(params, invs...)
+		err = play.commandExecutor.Run(play.playbookBinPath,
+			append(params, playbookPath)...)
+	} else {
+		for _, inventory := range play.Inventories {
+			fmt.Fprintf(play.stdout,
+				"Start running %s playbook on %s inventory...\n", playbookName, inventory)
+			params := append(params, buildInventoryArg(inventory)...)
+			err = play.commandExecutor.Run(play.playbookBinPath,
+				append(params, playbookPath)...)
+			if err != nil {
+				break
+			}
 		}
 	}
 
-	return nil
-}
-
-func (play Playbook) play(playbookPath string, inventory string) error {
-	if len(inventory) == 0 {
-		return fmt.Errorf("playbook: inventory is empty")
-	}
-
-	params := append(play.computeAnsibleOptions(inventory), playbookPath)
-	err := play.commandExecutor.Run(play.playbookBinPath, params...)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (play Playbook) computePlaybookPath(name string) (string, error) {
@@ -82,11 +80,4 @@ func (play Playbook) computePlaybookPath(name string) (string, error) {
 	}
 
 	return playbookPath, nil
-}
-
-func (play Playbook) computeAnsibleOptions(inventory string) []string {
-	var result = play.computeCommonArgsWithInventory(inventory)
-	result = append(result, play.OtherArgs...)
-
-	return result
 }

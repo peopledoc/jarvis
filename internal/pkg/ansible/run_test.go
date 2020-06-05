@@ -82,8 +82,8 @@ func TestComputeRunAnsibleOptions(t *testing.T) {
 	tests := []struct {
 		name         string
 		runArgs      RunModule
-		expectedArgs []string
 		inventory    string
+		expectedArgs []string
 	}{
 		{
 			"default module arg",
@@ -93,8 +93,8 @@ func TestComputeRunAnsibleOptions(t *testing.T) {
 					ModuleArg:   "fooArg",
 					HostPattern: "fooHost",
 				}},
-			[]string{"--diff", "--inventory", "inv1", "-m", "fooMod", "--args", "fooArg", "fooHost"},
 			"inv1",
+			[]string{"--diff", "--inventory", "inv1", "-m", "fooMod", "--args", "fooArg", "fooHost"},
 		},
 		{
 			"nodiff",
@@ -103,14 +103,14 @@ func TestComputeRunAnsibleOptions(t *testing.T) {
 
 					CommonArgs: CommonArgs{
 						HideDiff:  true,
-						OtherArgs: []string{"extra1", "extra2"},
+						OtherArgs: []string{"other1", "other2"},
 					},
 					ModuleName:  "barMod",
 					ModuleArg:   "barArg",
 					HostPattern: "barHost",
 				}},
-			[]string{"--inventory", "inv2", "-m", "barMod", "--args", "barArg", "barHost", "extra1", "extra2"},
 			"inv2",
+			[]string{"other1", "other2", "--inventory", "inv2", "-m", "barMod", "--args", "barArg", "barHost"},
 		},
 		{
 			"noarg",
@@ -119,13 +119,13 @@ func TestComputeRunAnsibleOptions(t *testing.T) {
 
 					CommonArgs: CommonArgs{
 						BecomeSudo: true,
-						OtherArgs:  []string{"extra1", "extra2"},
+						OtherArgs:  []string{"other1", "other2"},
 					},
 					ModuleName:  "ping",
 					HostPattern: "barHost",
 				}},
-			[]string{"-b", "--diff", "--inventory", "inv3", "-m", "ping", "barHost", "extra1", "extra2"},
 			"inv3",
+			[]string{"-b", "--diff", "other1", "other2", "--inventory", "inv3", "-m", "ping", "barHost"},
 		},
 	}
 	for _, tt := range tests {

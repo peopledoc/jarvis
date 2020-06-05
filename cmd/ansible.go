@@ -16,6 +16,7 @@ var (
 	CheckModeDeactivated bool
 	CheckModeEnabled     bool
 	BecomeSudo           bool
+	JoinInventories      bool
 )
 
 var (
@@ -33,10 +34,12 @@ func init() {
 		"Become sudo")
 	playCmd.Flags().BoolVar(&CheckModeDeactivated, "nocheck", false,
 		"Deactivate check mode")
+	playCmd.Flags().BoolVar(&JoinInventories, "join-inventories", false,
+		"Join platforms inventories")
 
 	ansibleCmd.AddCommand(runCmd)
 	runCmd.Flags().StringVarP(&ModuleName, "module", "m", "shell", "Ansible module name")
-	runCmd.Flags().StringVarP(&ModuleArg, "args", "a", "", "Ansible module name")
+	runCmd.Flags().StringVarP(&ModuleArg, "args", "a", "", "Ansible module arg")
 	runCmd.Flags().StringVarP(&HostPattern, "target", "t", "", "Ansible host-pattern")
 	runCmd.Flags().BoolVar(&CheckModeEnabled, "check", false,
 		"Enable check mode")
@@ -106,6 +109,13 @@ var playCmd = &cobra.Command{
 	Short: "Play playbook",
 	//playbook name is mandatory
 	Args: cobra.MinimumNArgs(1),
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if JoinInventories && !environment.IsPredicateJoinInventoriesSyntaxValid(envName) {
+			return fmt.Errorf("With join-inventories set, environment flag must have 'type' and 'env' set. Ex:'type.env'")
+		}
+
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmdWorkingDir := viper.GetString("ansible.working_directory")
 		envsPath := viper.GetString("environments.path")
@@ -120,6 +130,7 @@ var playCmd = &cobra.Command{
 			HideDiff:         HideDiff,
 			BecomeSudo:       BecomeSudo,
 			CheckModeEnabled: !CheckModeDeactivated,
+			JoinInventories:  JoinInventories,
 			OtherArgs:        args[1:],
 		}
 		playbookBinPath := viper.GetString("ansible.playbook.bin_path")
