@@ -1,3 +1,9 @@
+VERSION=$(shell git tag --contains HEAD | head)
+EXTERNAL_TOOLS = \
+    github.com/Songmu/goxz/cmd/goxz \
+    github.com/tcnksm/ghr \
+    github.com/Songmu/ghch/cmd/ghch
+
 BINDIR:=$(CURDIR)/bin
 BINNAME?=jarvis
 
@@ -7,36 +13,47 @@ GOCLEAN=$(GOCMD) clean
 GOGENERATE=$(GOCMD) generate
 GOTEST=$(GOCMD) test
 
-#------
-#	all
-.PHONY: all
+.PHONY: devel-deps
+devel-deps:
+	@for tool in $(EXTERNAL_TOOLS) ; do \
+      echo "Installing $$tool" ; \
+      GO111MODULE=off go get $$tool; \
+    done
 
-all: test build
-
-#------
-#	build
 .PHONY: build
-
 build:
 	$(GOBUILD) -o $(BINDIR)/$(BINNAME) -v 
 
-#------
-#	test
 .PHONY: test
-
 test:
 	$(GOTEST) -v ./...
 
-#------
-# generate codes (ex:gomock)
 .PHONY: generate
-
 generate:
 	$(GOGENERATE) -v ./...
 
-#------
-# clean	
 .PHONY: clean
-
 clean:
 	$(GOCLEAN)
+
+# release part
+
+.PHONY: validate-version
+validate-version:
+ifeq ($(strip $(VERSION)),)
+	$(error Version must be set, please add a tag)
+endif
+
+.PHONY: upload
+upload: validate-version devel-deps
+	ghr -v
+	ghr -body="$$(ghch --latest -F markdown)" v${VERSION} pkg/dist/v${VERSION}
+
+.PHONY: validate-version crossbuild
+crossbuild:
+	goxz -pv=v${VERSION} \
+        -arch=386,amd64 -d=./pkg/dist/v${VERSION}
+	cd pkg/dist/v${VERSION} && shasum -a 256 * > ./v${VERSION}_SHASUMS
+
+.PHONY: release
+release: validate-version devel-deps crossbuild upload
