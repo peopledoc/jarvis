@@ -12,6 +12,7 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOGENERATE=$(GOCMD) generate
 GOTEST=$(GOCMD) test
+GOBUILDFLAGS= "-trimpath"
 
 .PHONY: devel-deps
 devel-deps:
@@ -22,7 +23,7 @@ devel-deps:
 
 .PHONY: build
 build:
-	$(GOBUILD) -o $(BINDIR)/$(BINNAME) -v 
+	$(GOBUILD) -o $(BINDIR)/$(BINNAME) -v $(GOBUILDFLAGS)
 
 .PHONY: test
 test:
