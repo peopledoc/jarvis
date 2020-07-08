@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"jarvis/internal/pkg/ansible"
 	"jarvis/internal/pkg/command"
 	"jarvis/internal/pkg/environment"
@@ -11,39 +13,62 @@ import (
 	"github.com/spf13/viper"
 )
 
+//Ansible flags
 var (
-	HideDiff             bool
+	HideDiff   bool
+	BecomeSudo bool
+)
+
+//Playbook flags
+var (
 	CheckModeDeactivated bool
-	CheckModeEnabled     bool
-	BecomeSudo           bool
 	JoinInventories      bool
 )
 
+//Run flags
 var (
-	ModuleName  string
-	ModuleArg   string
-	HostPattern string
+	CheckModeEnabled bool
+	ModuleName       string
+	ModuleArg        string
+	HostPattern      string
+)
+
+//Inventory flags
+var (
+	ListGroup     bool
+	HostGroupName string
+	WithParent    bool
 )
 
 func init() {
 	rootCmd.AddCommand(ansibleCmd)
-	ansibleCmd.AddCommand(playCmd)
+	//AnsibleCmd
 	ansibleCmd.PersistentFlags().BoolVar(&HideDiff, "nodiff", false,
 		"Hide diff")
 	ansibleCmd.PersistentFlags().BoolVarP(&BecomeSudo, "become", "b", false,
 		"Become sudo")
+
+	//PlaybookCmd
 	playCmd.Flags().BoolVar(&CheckModeDeactivated, "nocheck", false,
 		"Deactivate check mode")
 	playCmd.Flags().BoolVar(&JoinInventories, "join-inventories", false,
 		"Join platforms inventories")
+	ansibleCmd.AddCommand(playCmd)
 
-	ansibleCmd.AddCommand(runCmd)
+	//RunCmd
 	runCmd.Flags().StringVarP(&ModuleName, "module", "m", "shell", "Ansible module name")
 	runCmd.Flags().StringVarP(&ModuleArg, "args", "a", "", "Ansible module arg")
 	runCmd.Flags().StringVarP(&HostPattern, "target", "t", "", "Ansible host-pattern")
 	runCmd.Flags().BoolVar(&CheckModeEnabled, "check", false,
 		"Enable check mode")
 	runCmd.MarkFlagRequired("target")
+	ansibleCmd.AddCommand(runCmd)
+
+	//InventoryCmd
+	inventoryCmd.Flags().BoolVarP(&WithParent, "with-parent", "W", false, "Query with parent group")
+	inventoryCmd.Flags().BoolVarP(&ListGroup, "group", "G", false, "List group name (mutually exclusive with --host)")
+	inventoryCmd.Flags().StringVarP(&HostGroupName, "host", "H", "", "List host by group name (mutually exclusive with --group)")
+	ansibleCmd.AddCommand(inventoryCmd)
 }
 
 //usage: jarvis ansible
@@ -147,4 +172,86 @@ var playCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+//usage: jarvis ansible list
+//returns:
+// --group(bool) >> list groups name
+// --hosts(string) >> hosts by group
+var inventoryCmd = &cobra.Command{
+	Use:   "list",
+	Short: "Query inventory",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		//checking exclusivity
+		if ListGroup && HostGroupName != "" {
+			return fmt.Errorf("--group and --hosts are mutually exclusive")
+		}
+
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		envsPath := viper.GetString("environments.path")
+
+		allInventories, err := environment.GetFullPathInventoriesFromEnvironments(envsPath, *environments)
+		if err != nil {
+			return err
+		}
+
+		var invReaders []io.Reader
+		for _, invs := range allInventories {
+			for _, inv := range invs {
+				if !fileExists(inv) {
+					return fmt.Errorf("the %v file does not exist", inv)
+				}
+				f, err := os.Open(inv)
+				if err != nil {
+					return err
+				}
+				invReaders = append(invReaders, bufio.NewReader(f))
+
+				if isDebug {
+					fmt.Println(inv)
+				}
+			}
+		}
+		//to concatenate all files to one reader
+		r := io.MultiReader(invReaders...)
+		manipulator := ansible.InitInventoryManipulator(r)
+
+		if ListGroup {
+			groups, err := manipulator.GetGroupsName(WithParent)
+			if err != nil {
+				return err
+			}
+			//I know it is a bit odd but Jarvis is learning
+			//be nice with him :)
+			for _, g := range groups {
+				fmt.Println(g)
+			}
+
+			return nil
+		}
+
+		if HostGroupName != "" {
+			hosts, err := manipulator.GetHostsByGroupName(HostGroupName)
+			if err != nil {
+				return err
+			}
+			for _, h := range hosts {
+				fmt.Println(h)
+			}
+
+			return nil
+		}
+
+		return nil
+	},
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
