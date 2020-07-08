@@ -17,22 +17,22 @@ func TestPlaybookExecutorPlay(t *testing.T) {
 	fullPlaybookPath := filepath.Join(playbookRepoPath, playbookName)
 	tests := []struct {
 		name              string
-		inventories       []string
+		inventories       [][]string
 		joinedInventories bool
 		args              []string
 		err               error
 	}{
-		{"empty inventories", []string{}, false, []string{}, errors.New("playbook: no inventory to work on")},
+		{"empty inventories", [][]string{}, false, []string{}, errors.New("playbook: no inventory to work on")},
 		{
 			"successfull run",
-			[]string{"inventory1", "inventory2", "inventory3"},
+			[][]string{{"inventory1"}, {"inventory2"}, {"inventory3"}},
 			false,
 			[]string{"--diff", "--inventory"},
 			nil,
 		},
 		{
 			"successfull join run",
-			[]string{"inventory1", "inventory2", "inventory3"},
+			[][]string{{"inventory1"}, {"inventory2"}, {"inventory3"}},
 			true,
 			[]string{"--diff", "--inventory", "inventory1", "--inventory", "inventory2", "--inventory", "inventory3"},
 			nil,
@@ -59,12 +59,14 @@ func TestPlaybookExecutorPlay(t *testing.T) {
 						Return(nil).
 						Times(1)
 				} else {
-					for _, inventory := range tt.inventories {
-						completeArgs := append(tt.args, inventory, fullPlaybookPath)
-						m.EXPECT().
-							Run(playbookBinPath, completeArgs).
-							Return(nil).
-							Times(1)
+					for _, inventories := range tt.inventories {
+						for _, inventory := range inventories {
+							completeArgs := append(tt.args, inventory, fullPlaybookPath)
+							m.EXPECT().
+								Run(playbookBinPath, completeArgs).
+								Return(nil).
+								Times(1)
+						}
 					}
 				}
 			}

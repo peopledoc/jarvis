@@ -31,7 +31,7 @@ func InitPlaybookExecutor(cmdExecutor CommandExecutor, playbookBinPath, playbook
 }
 
 func (play Playbook) Play(playbookName string) error {
-	if len(play.Inventories) == 0 {
+	if isInventoriesEmpty(play.Inventories) {
 		return fmt.Errorf("playbook: no inventory to work on")
 	}
 

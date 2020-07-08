@@ -11,7 +11,7 @@ type (
 	}
 
 	CommonArgs struct {
-		Inventories          []string
+		Inventories          [][]string
 		HideDiff, BecomeSudo bool
 		CheckModeEnabled     bool
 		JoinInventories      bool
@@ -36,8 +36,12 @@ func (cargs CommonArgs) buildCommonArgs() []string {
 	return result
 }
 
-func buildInventoryArg(inventory string) []string {
-	return []string{"--inventory", inventory}
+func buildInventoryArg(inventories []string) []string {
+	var a []string
+	for _, inv := range inventories {
+		a = append(a, "--inventory", inv)
+	}
+	return a
 }
 
 func (cargs CommonArgs) joinInventories() []string {
@@ -52,4 +56,23 @@ func (cargs CommonArgs) printInventories(writer io.Writer) {
 	for _, inv := range cargs.Inventories {
 		fmt.Fprintln(writer, "inventory:", inv)
 	}
+}
+
+func isInventoriesEmpty(inventories [][]string) bool {
+	if len(inventories) == 0 {
+		return true
+	}
+	for _, invs := range inventories {
+		if len(invs) == 0 {
+			return true
+		}
+		for _, inv := range invs {
+			if len(inv) == 0 {
+				return true
+			}
+
+		}
+	}
+
+	return false
 }

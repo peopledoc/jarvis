@@ -45,10 +45,12 @@ func (runMod RunModule) Run() error {
 	if runMod.debug {
 		runMod.printInventories(runMod.stdout)
 	}
+
+	if isInventoriesEmpty(runMod.Inventories) {
+		return fmt.Errorf("run: inventory is empty")
+	}
+
 	for _, inventory := range runMod.Inventories {
-		if len(inventory) == 0 {
-			return fmt.Errorf("run: inventory is empty")
-		}
 		if runMod.debug {
 			fmt.Fprintf(runMod.stdout, "Start running %s module on %s inventory...\n",
 				runMod.ModuleName, inventory)
@@ -62,7 +64,7 @@ func (runMod RunModule) Run() error {
 	return nil
 }
 
-func (runMod RunModule) computeAnsibleOptions(inventory string) []string {
+func (runMod RunModule) computeAnsibleOptions(inventory []string) []string {
 	var result = runMod.buildCommonArgs()
 	result = append(result, buildInventoryArg(inventory)...)
 	result = append(result, "-m", runMod.ModuleName)
