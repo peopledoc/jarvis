@@ -14,16 +14,16 @@ GOGENERATE=$(GOCMD) generate
 GOTEST=$(GOCMD) test
 GOBUILDFLAGS= "-trimpath"
 
+.PHONY: build
+build:
+	$(GOBUILD) -o $(BINDIR)/$(BINNAME) -v $(GOBUILDFLAGS)
+
 .PHONY: devel-deps
 devel-deps:
 	@for tool in $(EXTERNAL_TOOLS) ; do \
       echo "Installing $$tool" ; \
       GO111MODULE=off go get $$tool; \
     done
-
-.PHONY: build
-build:
-	$(GOBUILD) -o $(BINDIR)/$(BINNAME) -v $(GOBUILDFLAGS)
 
 .PHONY: test
 test:

@@ -44,6 +44,7 @@ func init() {
 		StringVarP(&envName, "env", "e", "", "Environment name, syntax(type.env.platform)")
 	rootCmd.PersistentFlags().
 		BoolVar(&isDebug, "debug", false, "debug mode")
+	rootCmd.MarkPersistentFlagRequired("env")
 
 	cobra.OnInitialize(initConfig)
 }
