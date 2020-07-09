@@ -65,11 +65,11 @@ func FindEnvironmentTreeFromPredicate(predicate *ParsedPredicate, envs *Environm
 	return env, nil
 }
 
-func GetFullPathInventoriesFromEnvironments(basePath string, envs Environments) ([]string, error) {
+func GetFullPathInventoriesFromEnvironments(basePath string, envs Environments) ([][]string, error) {
 	if envs == nil {
 		return nil, fmt.Errorf("environment: environment tree is nil")
 	}
-	var globalInventories []string
+	var globalInventories [][]string
 
 	for _, env := range envs {
 		if env.Descriptions == nil {
@@ -85,9 +85,12 @@ func GetFullPathInventoriesFromEnvironments(basePath string, envs Environments) 
 					return nil, fmt.Errorf("environment: no inventories")
 				}
 
-				for _, relativePath := range platform.Inventories {
-					globalInventories = append(globalInventories, filepath.Join(basePath, relativePath))
+				invs := make([]string, len(platform.Inventories))
+				for i, relativePath := range platform.Inventories {
+					invs[i] = filepath.Join(basePath, relativePath)
 				}
+
+				globalInventories = append(globalInventories, invs)
 			}
 		}
 

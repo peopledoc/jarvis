@@ -20,14 +20,14 @@ func TestRunModule(t *testing.T) {
 		module      string
 		modulearg   string
 		hosttarget  string
-		inventories []string
+		inventories [][]string
 		args        []string
 		err         error
 	}{
-		{"no inventories", "modulename", "fooarg", "targets", []string{}, []string{"someargs"}, errors.New("run: no inventory to work on")},
-		{"empty inventory", "modulename", "fooarg", "targets", []string{""}, []string{"someargs"}, errors.New("run: inventory is empty")},
+		{"no inventories", "modulename", "fooarg", "targets", [][]string{}, []string{"someargs"}, errors.New("run: no inventory to work on")},
+		{"empty inventory", "modulename", "fooarg", "targets", [][]string{{""}}, []string{"someargs"}, errors.New("run: inventory is empty")},
 		{"valid inventories", "modulename", "fooarg", "targets",
-			[]string{"inv1", "inv2"},
+			[][]string{{"inv1"}, {"inv2"}},
 			[]string{"--diff", "--inventory"}, nil},
 	}
 	ctrl := gomock.NewController(t)
@@ -42,18 +42,19 @@ func TestRunModule(t *testing.T) {
 					Run(runBinPath, []string{}).
 					Times(0)
 			} else {
-
-				for _, inventory := range tt.inventories {
-					completeArgs := append(
-						tt.args,
-						inventory,
-						"-m", tt.module,
-						"--args", tt.modulearg,
-						tt.hosttarget,
-					)
-					m.EXPECT().
-						Run(runBinPath, completeArgs).
-						Times(1)
+				for _, inventories := range tt.inventories {
+					for _, inventory := range inventories {
+						completeArgs := append(
+							tt.args,
+							inventory,
+							"-m", tt.module,
+							"--args", tt.modulearg,
+							tt.hosttarget,
+						)
+						m.EXPECT().
+							Run(runBinPath, completeArgs).
+							Times(1)
+					}
 				}
 			}
 			rE := InitRunModuleExecutor(
@@ -82,7 +83,7 @@ func TestComputeRunAnsibleOptions(t *testing.T) {
 	tests := []struct {
 		name         string
 		runArgs      RunModule
-		inventory    string
+		inventory    []string
 		expectedArgs []string
 	}{
 		{
@@ -93,7 +94,7 @@ func TestComputeRunAnsibleOptions(t *testing.T) {
 					ModuleArg:   "fooArg",
 					HostPattern: "fooHost",
 				}},
-			"inv1",
+			[]string{"inv1"},
 			[]string{"--diff", "--inventory", "inv1", "-m", "fooMod", "--args", "fooArg", "fooHost"},
 		},
 		{
@@ -109,7 +110,7 @@ func TestComputeRunAnsibleOptions(t *testing.T) {
 					ModuleArg:   "barArg",
 					HostPattern: "barHost",
 				}},
-			"inv2",
+			[]string{"inv2"},
 			[]string{"other1", "other2", "--inventory", "inv2", "-m", "barMod", "--args", "barArg", "barHost"},
 		},
 		{
@@ -124,7 +125,7 @@ func TestComputeRunAnsibleOptions(t *testing.T) {
 					ModuleName:  "ping",
 					HostPattern: "barHost",
 				}},
-			"inv3",
+			[]string{"inv3"},
 			[]string{"-b", "--diff", "other1", "other2", "--inventory", "inv3", "-m", "ping", "barHost"},
 		},
 	}
