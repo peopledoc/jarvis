@@ -35,7 +35,7 @@ func (r Runner) Run(command string, params ...string) error {
 	err := cmd.Start()
 
 	if err != nil {
-		return fmt.Errorf("command: failed to start command:%v, err:%v", command, err)
+		return fmt.Errorf("command: failed to start %v, err:%v", command, err)
 	}
 
 	//To synchronize before calling Wait on cmd
@@ -59,7 +59,7 @@ func (r Runner) Run(command string, params ...string) error {
 	err = cmd.Wait()
 
 	if err != nil {
-		return fmt.Errorf("command: failed to run command:%v, err:%v", command, err)
+		return fmt.Errorf("command: failed to run %v, err:%v", command, err)
 	}
 	if errStdout != nil || errStderr != nil {
 		return fmt.Errorf("command: failed to capture stdout or stderr")

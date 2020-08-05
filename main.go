@@ -1,9 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"jarvis/cmd"
+	"os"
 )
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
 }
