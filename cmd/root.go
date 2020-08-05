@@ -12,6 +12,7 @@ import (
 )
 
 const SilenceUsageOnError = true
+const SilenceErrors = true
 
 var (
 	configFile   string
@@ -20,9 +21,10 @@ var (
 	isDebug      bool
 
 	rootCmd = &cobra.Command{
-		Use:          "jarvis",
-		SilenceUsage: SilenceUsageOnError,
-		Short:        "jarvis is our automation CLI",
+		Use:           "jarvis",
+		SilenceUsage:  SilenceUsageOnError,
+		SilenceErrors: SilenceErrors,
+		Short:         "jarvis is our automation CLI",
 		Long: `jarvis is the main command, used to facilitate SRE's life.
 		
 jarvis is smart, jarvis is beautiful,
