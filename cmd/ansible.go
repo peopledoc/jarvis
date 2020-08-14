@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"jarvis/internal/pkg/ansible"
@@ -93,7 +92,7 @@ var runCmd = &cobra.Command{
 		cmdWorkingDir := viper.GetString("ansible.working_directory")
 		envsPath := viper.GetString("environments.path")
 
-		inventories, err := environment.GetFullPathInventoriesFromEnvironments(envsPath, *environments)
+		inventories, err := environment.GetFullPathInventoriesFromEnvironments(envsPath, environments)
 		if err != nil {
 			return err
 		}
@@ -145,7 +144,7 @@ var playCmd = &cobra.Command{
 		cmdWorkingDir := viper.GetString("ansible.working_directory")
 		envsPath := viper.GetString("environments.path")
 
-		inventories, err := environment.GetFullPathInventoriesFromEnvironments(envsPath, *environments)
+		inventories, err := environment.GetFullPathInventoriesFromEnvironments(envsPath, environments)
 		if err != nil {
 			return err
 		}
@@ -190,33 +189,17 @@ var inventoryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		envsPath := viper.GetString("environments.path")
-
-		allInventories, err := environment.GetFullPathInventoriesFromEnvironments(envsPath, *environments)
+		invReaders, err := inventoriesReaders(environments)
 		if err != nil {
 			return err
 		}
 
-		var invReaders []io.Reader
-		for _, invs := range allInventories {
-			for _, inv := range invs {
-				if !fileExists(inv) {
-					return fmt.Errorf("the %v file does not exist", inv)
-				}
-				f, err := os.Open(inv)
-				if err != nil {
-					return err
-				}
-				invReaders = append(invReaders, bufio.NewReader(f))
-
-				if isDebug {
-					fmt.Println(inv)
-				}
-			}
-		}
 		//to concatenate all files to one reader
 		r := io.MultiReader(invReaders...)
-		manipulator := ansible.InitInventoryManipulator(r)
+		manipulator, err := ansible.InitInventoryManipulator(r)
+		if err != nil {
+			return err
+		}
 
 		if ListGroup {
 			groups, err := manipulator.GetGroupsName(WithParent)
@@ -246,6 +229,22 @@ var inventoryCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func inventoriesReaders(envs []*environment.Environment) ([]io.Reader, error) {
+	envsPath := viper.GetString("environments.path")
+
+	allInventories, err := environment.GetFullPathInventoriesFromEnvironments(envsPath, envs)
+	if err != nil {
+		return nil, err
+	}
+
+	invReaders, err := ansible.BuildReadersFromInventoriesPath(allInventories)
+	if err != nil {
+		return nil, err
+	}
+
+	return invReaders, nil
 }
 
 func fileExists(filename string) bool {

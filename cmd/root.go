@@ -17,7 +17,7 @@ const SilenceErrors = true
 var (
 	configFile   string
 	envName      string
-	environments *environment.Environments
+	environments []*environment.Environment
 	isDebug      bool
 
 	rootCmd = &cobra.Command{
@@ -46,7 +46,6 @@ func init() {
 		StringVarP(&envName, "env", "e", "", "Environment name, syntax(type.env.platform)")
 	rootCmd.PersistentFlags().
 		BoolVar(&isDebug, "debug", false, "debug mode")
-	rootCmd.MarkPersistentFlagRequired("env")
 
 	cobra.OnInitialize(initConfig)
 }
@@ -61,37 +60,16 @@ func initConfig() {
 }
 
 func rootPersistentPreRunE(cmd *cobra.Command, args []string) error {
+	//Do we need to handle a specific environment?
 	helperPath := path.Join(
 		viper.GetString("environments.path"), viper.GetString("environments.helper"))
-
-	envs, err := environment.ParseEnvironmentFile(helperPath)
+	choosenEnv, err := environment.ParseRawEnvironmentPredicate(helperPath, envName)
 	if err != nil {
-		return fmt.Errorf("fatal error while listing inventories: %s", err)
+		return err
 	}
+	environments = []*environment.Environment{choosenEnv}
 
-	//Do we need to handle a specific environment?
-	if len(envName) > 0 {
-		choosenEnv, err := handleEnvArgument(envName, envs)
-		if err != nil {
-			return err
-		}
-		envs = &environment.Environments{choosenEnv}
-	}
-
-	environments = envs
 	return nil
-}
-
-func handleEnvArgument(envName string, envs *environment.Environments) (*environment.Environment, error) {
-	envPredicate, err := environment.ParsePredicate(envName)
-	if err != nil {
-		return nil, err
-	}
-	choosenEnv, err := environment.FindEnvironmentTreeFromPredicate(envPredicate, envs)
-	if err != nil {
-		return nil, err
-	}
-	return choosenEnv, nil
 }
 
 func Execute() error {

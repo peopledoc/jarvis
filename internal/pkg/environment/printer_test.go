@@ -13,7 +13,7 @@ func TestTreePrinterOutput(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	envs := Environments{
+	envs := []*Environment{
 		&Environment{
 			Type: "toto",
 			Descriptions: []EnvironmentDescription{

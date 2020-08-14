@@ -6,7 +6,7 @@ import (
 )
 
 func TestFindEnvironmentTree(t *testing.T) {
-	envs := Environments{
+	envs := []*Environment{
 		&Environment{
 			Type: "toto",
 			Descriptions: []EnvironmentDescription{
@@ -39,7 +39,7 @@ func TestFindEnvironmentTree(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := FindEnvironmentTreeFromPredicate(tt.predicate, &envs)
+			_, err := FindEnvironmentTreeFromPredicate(tt.predicate, envs)
 			if tt.err != nil {
 				if err == nil {
 					t.Errorf("Should have returned an error, %v", tt.err)

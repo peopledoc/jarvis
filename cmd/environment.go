@@ -32,7 +32,7 @@ var environmentListCmd = &cobra.Command{
 		//For the moment we have only one available printer... tree
 		w := bufio.NewWriter(os.Stdout)
 		printer := environment.TreePrinter{}
-		printer.PrintEnvironments(w, *environments)
+		printer.PrintEnvironments(w, environments)
 		w.Flush()
 		return nil
 	},

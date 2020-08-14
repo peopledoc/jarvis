@@ -7,7 +7,7 @@ import (
 
 type TreePrinter struct{}
 
-func (p TreePrinter) PrintEnvironments(output io.Writer, envs Environments) {
+func (p TreePrinter) PrintEnvironments(output io.Writer, envs []*Environment) {
 	platformPrefix := "│   "
 	envPrefix := "├──"
 	for i, value := range envs {

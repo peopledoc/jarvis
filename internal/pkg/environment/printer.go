@@ -5,5 +5,5 @@ import (
 )
 
 type EnvironmentsPrinter interface {
-	PrintEnvironments(output io.Writer, envs Environments)
+	PrintEnvironments(output io.Writer, envs []*Environment)
 }
