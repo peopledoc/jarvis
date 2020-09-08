@@ -1,8 +1,6 @@
 package environment
 
 type (
-	Environments []*Environment
-
 	Environment struct {
 		Type         string                   `yaml:"type"`
 		Descriptions []EnvironmentDescription `yaml:"envs"`

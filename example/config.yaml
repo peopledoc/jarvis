@@ -1,3 +1,6 @@
+api:
+  port: 8080
+  log_level: trace #could be trace, debug, info, warn
 environments:
   path: /location/of/where/the/ansible/inventories/lives
   helper: environments.yaml

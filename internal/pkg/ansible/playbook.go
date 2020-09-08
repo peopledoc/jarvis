@@ -3,6 +3,7 @@ package ansible
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -65,6 +66,22 @@ func (play Playbook) Play(playbookName string) error {
 	}
 
 	return err
+}
+
+func ListPlaybooks(path string) ([]string, error) {
+	var books []string
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range files {
+		if !f.IsDir() {
+			books = append(books, f.Name())
+		}
+	}
+
+	return books, nil
 }
 
 func (play Playbook) computePlaybookPath(name string) (string, error) {

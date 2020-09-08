@@ -21,7 +21,7 @@ func init() {
 
 //FindEnvironmentTreeFromPredicate return an environment tree corresponding to
 // the predicate parameter
-func FindEnvironmentTreeFromPredicate(predicate *ParsedPredicate, envs *Environments) (*Environment, error) {
+func FindEnvironmentTreeFromPredicate(predicate *ParsedPredicate, envs []*Environment) (*Environment, error) {
 	if predicate == nil || envs == nil {
 		return nil, errors.New("environment: predicate or environment are null")
 	}
@@ -65,7 +65,7 @@ func FindEnvironmentTreeFromPredicate(predicate *ParsedPredicate, envs *Environm
 	return env, nil
 }
 
-func GetFullPathInventoriesFromEnvironments(basePath string, envs Environments) ([][]string, error) {
+func GetFullPathInventoriesFromEnvironments(basePath string, envs []*Environment) ([][]string, error) {
 	if envs == nil {
 		return nil, fmt.Errorf("environment: environment tree is nil")
 	}
@@ -149,8 +149,8 @@ func findEnvDescription(name string, envs []EnvironmentDescription) *Environment
 	return nil
 }
 
-func findEnvironment(envName string, envs *Environments) *Environment {
-	for _, env := range *envs {
+func findEnvironment(envName string, envs []*Environment) *Environment {
+	for _, env := range envs {
 		if env.Type == envName {
 			return env
 		}
