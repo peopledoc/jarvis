@@ -18,8 +18,15 @@ type groupsHandler struct {
 }
 
 func (gH groupsHandler) list(w http.ResponseWriter, r *http.Request) {
-	log.Trace("hosts path called")
 	vars := mux.Vars(r)
+	var parents bool
+	if vars["parents"] == "1" {
+		parents = true
+		log.Trace("group (with parents) path called")
+	} else {
+		log.Trace("group path called")
+	}
+
 	helperPath := path.Join(
 		viper.GetString("environments.path"), viper.GetString("environments.helper"))
 
@@ -44,7 +51,7 @@ func (gH groupsHandler) list(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 
-		groups, err := manipulator.GetGroupsName(false)
+		groups, err := manipulator.GetGroupsName(parents)
 		if err != nil {
 			logErrorToResponse(err, "groups", w)
 			return

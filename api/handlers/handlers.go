@@ -32,6 +32,8 @@ func API(log *log.Logger) http.Handler {
 	//groups
 	gH := groupsHandler{log}
 	router.HandleFunc("/groups/{env}", gH.list).
+		Methods("GET").Queries("parents", "{parents:[01]}")
+	router.HandleFunc("/groups/{env}", gH.list).
 		Methods("GET")
 
 	//hosts
