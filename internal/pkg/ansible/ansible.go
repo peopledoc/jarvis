@@ -1,3 +1,4 @@
+//go:generate mockgen -source=ansible.go -destination=../mocks/mock_commandexecutor.go -package=mocks CommandExecutor
 package ansible
 
 import (
