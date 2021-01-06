@@ -26,7 +26,7 @@ func TestGetGroupName(t *testing.T) {
 				t.Fatalf("Error loading golden file: %s", err)
 			}
 			reader := bufio.NewReader(content)
-			iM := InitInventoryManipulator(reader)
+			iM, err := InitInventoryManipulator(reader)
 			res, err := iM.GetGroupsName(tt.withParents)
 
 			if tt.err != nil {
@@ -63,7 +63,7 @@ func TestGetHostsByGroupName(t *testing.T) {
 				t.Fatalf("Error loading golden file: %s", err)
 			}
 			reader := bufio.NewReader(content)
-			iM := InitInventoryManipulator(reader)
+			iM, err := InitInventoryManipulator(reader)
 			res, err := iM.GetHostsByGroupName(tt.group)
 
 			if tt.err != nil {
